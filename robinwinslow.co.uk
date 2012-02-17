@@ -1,0 +1,128 @@
+# Robin Winslow Site
+# ===
+
+# Default site
+# ---
+server {
+    listen       80;
+    server_name php-fpm-proxy
+                robinwinslow.co.uk
+                rw.robinwinslow.co.uk
+                dev.robinwinslow.co.uk;
+    
+    access_log  /var/log/nginx/robinwinslow.co.uk.access.log;
+    error_log   /var/log/nginx/robinwinslow.co.uk.error.log;
+    
+    location / {
+        root /var/www/robinwinslow.co.uk;
+        index index.php index.html index.htm;
+	
+        error_page 400 /controller.php?page=error&status=400;
+        error_page 401 /controller.php?page=error&status=401;
+        error_page 402 /controller.php?page=error&status=402;
+        error_page 403 /controller.php?page=error&status=403;
+        error_page 404 /controller.php?page=error&status=404;
+        error_page 405 /controller.php?page=error&status=405;
+        error_page 500 /controller.php?page=error&status=500;
+        error_page 501 /controller.php?page=error&status=501;
+        error_page 502 /controller.php?page=error&status=502;
+        error_page 503 /controller.php?page=error&status=503;
+        error_page 504 /controller.php?page=error&status=504;
+        error_page 505 /controller.php?page=error&status=505;
+        
+        if ($request_uri ~ .html$) {
+            rewrite ^/(.*).php$ $1 permanent;
+        }
+	
+        try_files $uri @controller;
+    }
+
+    location @controller {
+        rewrite  ^/(.*)$ /phpfcgiproxy?page=$1;
+    }
+
+    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    #
+    location /phpfcgiproxy {
+        fastcgi_pass   127.0.0.1:9000;
+        include        fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME  /var/web-controllers/php_controller.php;
+    }
+}
+
+server {
+    listen       80;
+    server_name  node-proxy
+                 node.robinwinslow.co.uk
+                 dev.node.robinwinslow.co.uk;
+
+    access_log  /var/log/nginx/node.robinwinslow.co.uk.access.log;
+    error_log   /var/log/nginx/node.robinwinslow.co.uk.error.log;
+
+    location / {
+        root /var/www/robinwinslow.co.uk;
+        index index.php index.html index.htm;
+	
+        error_page 400 /nodeproxy?page=error&status=400;
+        error_page 401 /nodeproxy?page=error&status=401;
+        error_page 402 /nodeproxy?page=error&status=402;
+        error_page 403 /nodeproxy?page=error&status=403;
+        error_page 404 /nodeproxy?page=error&status=404;
+        error_page 405 /nodeproxy?page=error&status=405;
+        error_page 500 /nodeproxy?page=error&status=500;
+        error_page 501 /nodeproxy?page=error&status=501;
+        error_page 502 /nodeproxy?page=error&status=502;
+        error_page 503 /nodeproxy?page=error&status=503;
+        error_page 504 /nodeproxy?page=error&status=504;
+        error_page 505 /nodeproxy?page=error&status=505;
+        
+        if ($request_uri ~ .html$) {
+            rewrite ^/(.*).js$ $1 permanent;
+        }
+	
+        try_files $uri @controller;
+   } 
+
+    location @controller {
+        rewrite  ^/(.*)$ /nodeproxy?page=$1;
+    }
+
+    location /nodeproxy {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass http://127.0.0.1:8081/;
+        proxy_redirect off;
+    }
+}
+
+# Wordpress blog
+# ---
+server {
+    listen       80;
+    server_name  blog.robinwinslow.co.uk
+                 dev.blog.robinwinslow.co.uk;
+
+    access_log  logs/blog.robinwinslow.co.uk.access.log;
+    error_log   logs/blog.robinwinslow.co.uk.error.log;
+
+    location / {
+        root /var/www/blog.robinwinslow.co.uk;
+        index index.php;
+
+        # this sends all non-existing file or directory requests to index.php
+        if (!-e $request_filename) {
+            rewrite ^/(.+)$ /index.php?q=$1 last;
+        }
+    }
+
+    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    #
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        include        fastcgi_params;
+        fastcgi_param  SCRIPT_FILENAME  /var/www/blog.robinwinslow.co.uk$fastcgi_script_name;
+    }
+}
+
