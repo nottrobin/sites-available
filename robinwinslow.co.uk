@@ -104,8 +104,8 @@ server {
     server_name  blog.robinwinslow.co.uk
                  dev.blog.robinwinslow.co.uk;
 
-    access_log  logs/blog.robinwinslow.co.uk.access.log;
-    error_log   logs/blog.robinwinslow.co.uk.error.log;
+    access_log  /var/log/nginx/blog.robinwinslow.co.uk.access.log;
+    error_log   /var/log/nginx/blog.robinwinslow.co.uk.error.log;
 
     location / {
         root /var/www/blog.robinwinslow.co.uk;
